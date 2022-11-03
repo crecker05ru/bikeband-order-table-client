@@ -1,0 +1,46 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background-attachment: #000;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+.usercard{
+margin: 10px 0px 10px 100px;
+}
+
+.users{
+  border: 3px solid #000;
+  width: 200px;
+  text-align: center;
+}
+.overflow-hidden{
+  overflow: hidden;
+}
+.href-container-w20px{
+  display:block;
+  width:20px;
+}
+.border-radius-5px{
+  border-radius: 5px;
+}
+.min-width-200px{
+  min-width: 200px;
+}
+span:hover{
+  cursor: pointer;
+}
+.app-image{
+  height: 200px;
+  width: 300px;
+}

@@ -1,0 +1,182 @@
+import React, {useEffect, useRef, useState} from 'react';
+import axios from "axios";
+import styles from '../styles/websocket.module.css'
+import {BsFillChatRightTextFill} from 'react-icons/bs'
+import UsersOnline from './usersOnline';
+import { useContext } from 'react';
+// import WebSocket from 'ws';
+
+
+
+
+const WebSock = ({userName}) => {
+    // console.log('userName in Websocket',userName)
+    const BASE_URL = process.env.NEXT_PUBLIC_WEBSOCKET
+    // console.log('BASE_URL',BASE_URL)
+    const [messages, setMessages] = useState([]);
+    // const [previousMessages,setPreviousMessages] = useState([])
+    const [value, setValue] = useState('');
+    const socket = useRef()
+    const [connected, setConnected] = useState(false);
+    const [username, setUsername] = useState(userName)
+    const [showChat,setShowChat] = useState(false)
+    const [usersOnline,setUsersOnline] = useState([])
+    const [showPreviousMessages,setShowPreviousMessages] = useState(false)
+    const validateValueEmpty = !value
+    // console.log('messages in websocket',messages)
+    // // console.log('previousMessages',previousMessages)
+    // const setUsersOnlineHandler = () => {
+    //     setUsersOnline(!usersOnline)
+    // }
+    // console.log('usersOnline',usersOnline)
+    function connect() {
+        // console.log('socket.current before - WebSocket',socket.current)
+        socket.current = new WebSocket(BASE_URL)
+        // console.log('socket.current after - WebSocket',socket.current)
+        socket.current.onopen = () => {
+            setConnected(true)
+            const message = {
+                event: 'connection',
+                username,
+                id: Date.now()
+            }
+            socket.current.send(JSON.stringify(message))
+            // socket.current.send(message)
+        }
+        socket.current.onmessage = (event) => {
+            const message = JSON.parse(event.data)
+            // const message = event.data
+            // console.log('event.data',event.data)
+            setMessages(prev => [message, ...prev])
+            if(message.event == 'connection'){
+                setUsersOnline(prev => [message.username, ...prev])     
+                // setUsersOnlineHandler()     
+            }
+            // console.log(`"message.event == 'connection'"`,message.event == 'connection')
+           
+            // setPreviousMessages(prev => [message,...prev])
+
+        }
+        socket.current.onclose= () => {
+            // console.log('Socket закрыт')
+            setConnected(false)
+            const message = {
+                event: 'close',
+                username,
+                id: Date.now()
+            }
+            socket.current.send(JSON.stringify(message))
+            // socket.current.send(message)
+        }
+        socket.current.onerror = () => {
+            // console.log('Socket произошла ошибка')
+        }
+
+    }
+    // useEffect(()=> {
+    //     connect()
+    // },[])
+
+    const sendMessage = async () => {
+        const message = {
+            username,
+            message: value,
+            id: Date.now(),
+            event: 'message'
+        }
+        socket.current.send(JSON.stringify(message));
+        // socket.current.send(message);
+        setValue('')
+    }
+
+  const showChatHandler = () => {
+        setShowChat(!showChat)
+        if(!connected){
+            connect()
+        }
+    }
+
+// const showPreviousMessages = ()=> {
+//     messages ? messages?.filter(m => Array.isArray(m))[0]?.map(m=> m?
+//         <div> <span className={userName == username ? styles.activeUser : styles.otherUsers}>{m.username}</span>: {m.message}</div>
+//          : <>no messages</> ) :<>Loading</>
+// }
+    if(!showChat){
+        return (
+            <button className={styles.showChatButton} onClick={showChatHandler}>Open  <BsFillChatRightTextFill/></button>
+        )
+    }
+
+    if (!connected) {
+        return (
+            <div className={styles.chatForm}>
+            {/* <div className="center">
+                <div className="form">
+                    <input
+                        value={username}
+                        onChange={e => setUsername(e.target.value)}
+                        type="text"
+                        placeholder="Введите ваше имя"/>
+                    <button onClick={connect}>Войти</button>
+                </div>
+            </div> */}
+            <div>Loading</div>
+            </div>
+        )
+    }
+
+
+    return (
+        <div className={styles.chatForm}>
+        <div className="center">
+            <div>
+                <UsersOnline usersOnline={usersOnline}/>
+                <div className={styles.chatHeader}>
+                    <input className={styles.inputText} value={value} onChange={e => setValue(e.target.value)} type="text"/>
+                    <button onClick={sendMessage} className={styles.buttonSend} disabled={validateValueEmpty}>Отправить</button>
+                    <button onClick={() => setShowChat(!showChat)} className={styles.buttonClose}>X</button>
+                </div>
+                <div className={styles.messagesForm}>
+                    {messages.map(m=> {
+                        m.event === 'close' 
+                        ? <div>Пользователь {m.username} вышел</div>
+                        : <></>
+                    })}
+                    {messages.map(mess =>
+                        <div key={mess.id}>
+                            {mess.event === 'connection'
+                                ? <div>
+                                    <div className={styles.previosMessages}>Предыдущие сообщения</div>
+                                     {/* <span className={userName == username ? styles.activeUser : styles.otherUsers}>{mess.username}</span>: {mess.message} */}
+                                        {showPreviousMessages ? messages.filter(m => Array.isArray(m))[0]?.sort(function(a, b) {
+                                            if(a.id < b.id){
+                                                return 1
+                                            }
+                                            if(a.id > b.id){
+                                                return - 1
+                                            }
+                                            return 0
+                                            }).map(m=> m?
+                                      <div> <span className={userName == username ? styles.activeUser : styles.otherUsers}>{m.username}</span>: {m.message}</div>
+                                       : <>no messages</> ) :<>no messages</>}
+                                    <button className={styles.loadPrevious} onClick={() => setShowPreviousMessages(!showPreviousMessages)}>Загрузить предыдущие сообщения</button>
+                                     <div className="connection_message">
+                                    Пользователь {mess.username} подключился
+                                   
+                                </div>
+                                    </div>
+                                    
+                                : <div className={styles.messages}>
+                                    <span className={userName == username ? styles.activeUser : styles.otherUsers}>{mess.username}</span>: {mess.message}
+                                </div>
+                            }
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+        </div>
+    );
+};
+
+export default WebSock;
